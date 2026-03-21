@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evently – Organizer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="app.css">
+<style>
+  .org-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.25);color:var(--accent);font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin-left:8px}
+  .page-head{padding:18px 20px 10px;display:flex;align-items:center;justify-content:space-between}
+  .page-head-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text)}
+
+  /* Participants modal */
+  .part-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text)}
+  .part-sub{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .part-table{width:100%;border-collapse:collapse;font-size:13px}
+  .part-table th{text-align:left;padding:8px 10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface2)}
+  .part-table td{padding:10px;border-bottom:1px solid var(--border);color:var(--text)}
+  .part-table tr:last-child td{border-bottom:none}
+  .no-regs{text-align:center;padding:32px;color:var(--muted);font-size:14px}
+
+  /* ── REGISTRATIONS PAGE ─────────────────────────── */
+  .regs-page-wrap{padding:0 0 16px}
+  .regs-page-head{padding:18px 20px 12px;display:flex;align-items:center;justify-content:space-between}
+  .regs-page-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--text)}
+  .live-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);padding:3px 10px;border-radius:20px}
+  .live-dot::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+
+  /* ── SEARCH BOX ─────────────────────────────────── */
+  .search-wrap{padding:0 20px 14px;position:relative}
+  .search-input{width:100%;padding:11px 16px 11px 42px;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+  .search-input::placeholder{color:var(--muted)}
+  .search-icon{position:absolute;left:34px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+  .search-clear{position:absolute;right:34px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);display:none;padding:2px}
+  .search-clear.show{display:block}
+
+  /* Search results */
+  .search-results-wrap{padding:0 20px}
+  .search-result-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+  .search-result-card{background:var(--surface);border-radius:14px;border:1px solid var(--border);padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+  .search-result-card.found{border-color:var(--green);background:rgba(16,185,129,.04)}
+  .search-result-card.not-found{border-color:#ef4444;background:rgba(239,68,68,.04)}
+  .search-result-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .search-status-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.5px}
+  .search-status-badge.found{background:rgba(16,185,129,.15);color:var(--green)}
+  .search-status-badge.not-found{background:rgba(239,68,68,.12);color:#ef4444}
+  .search-result-info{display:flex;flex-wrap:wrap;gap:8px}
+  .search-result-item{font-size:12px;color:var(--muted)}
+  .search-event-tag{font-size:11px;font-weight:600;background:rgba(37,99,235,.1);color:var(--accent);padding:2px 8px;border-radius:8px;margin-top:6px;display:inline-block}
+  .search-empty{text-align:center;padding:32px 20px;color:var(--muted);font-size:14px}
+  .search-empty-icon{font-size:40px;margin-bottom:8px}
+
+  /* highlight matched text */
+  .hl{background:rgba(37,99,235,.15);color:var(--accent);border-radius:3px;padding:0 2px;font-weight:600}
+
+  /* Event group */
+  .reg-event-group{margin:0 20px 16px;background:var(--surface);border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .reg-event-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);cursor:pointer;background:var(--surface2)}
+  .reg-event-header:hover{background:#e8f0fe}
+  .reg-event-name{font-size:14px;font-weight:600;color:var(--text)}
+  .reg-event-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .reg-count-badge{background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap}
+  .reg-event-body{display:none}
+  .reg-event-body.open{display:block}
+
+  /* Registration row */
+  .reg-row{display:flex;align-items:flex-start;padding:11px 16px;border-bottom:1px solid var(--border);gap:12px;transition:background .15s}
+  .reg-row:last-child{border-bottom:none}
+  .reg-row:hover{background:rgba(37,99,235,.03)}
+  .reg-row.new-flash{animation:flashRow .8s ease}
+  @keyframes flashRow{0%{background:rgba(16,185,129,.18)}100%{background:transparent}}
+  .reg-num{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  .reg-details{flex:1;display:flex;flex-direction:column;gap:3px}
+  .reg-name{font-size:13px;font-weight:600;color:var(--text)}
+  .reg-info-row{display:flex;flex-wrap:wrap;gap:8px}
+  .reg-info-item{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:3px}
+  .reg-time{font-size:10px;color:var(--muted);white-space:nowrap;margin-top:2px}
+  .reg-new-tag{font-size:9px;font-weight:700;background:rgba(16,185,129,.15);color:var(--green);padding:2px 6px;border-radius:8px;text-transform:uppercase;letter-spacing:.5px}
+
+  /* Nav badge */
+  .nav-badge{position:absolute;top:2px;right:10px;min-width:16px;height:16px;border-radius:8px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;opacity:0;transition:opacity .3s}
+  .nav-badge.show{opacity:1}
+  .nav-item{position:relative}
+
+  /* No events state */
+  .regs-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center;gap:10px}
+  .regs-empty-icon{font-size:48px}
+  .regs-empty-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--text)}
+  .regs-empty-sub{font-size:13px;color:var(--muted);line-height:1.6}
+
+  /* Filter chips */
+  .regs-filter{padding:0 20px 14px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+  .regs-filter::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="loading-screen" id="loading"><div class="loading-logo">Event<span>ly</span></div><div class="spinner"></div></div>
+
+<div id="app" style="display:none">
+  <div class="header">
+    <div style="display:flex;align-items:center">
+      <div class="app-name">Event<span>ly</span></div>
+      <div class="org-badge">✏️ Organizer</div>
+    </div>
+    <button class="avatar-btn" id="avatar-btn" onclick="navTo('profile')">O</button>
+  </div>
+  <div class="main">
+
+    <!-- MY EVENTS PAGE -->
+    <div class="page active" id="page-home">
+      <div class="page-head">
+        <div class="page-head-title">My Events</div>
+      </div>
+      <div class="events-list" id="my-events-list"></div>
+      <div style="height:16px"></div>
+    </div>
+
+    <!-- REGISTRATIONS PAGE -->
+    <div class="page" id="page-regs">
+      <div class="regs-page-wrap">
+        <div class="regs-page-head">
+          <div class="regs-page-title">Registrations</div>
+          <div class="live-dot">Live</div>
+        </div>
+
+        <!-- 🔍 Search box -->
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" id="search-input"
+            type="text"
+            placeholder="Search by name, email, phone or roll no…"
+            oninput="onSearch(this.value)"
+          >
+          <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+        </div>
+
+        <!-- Search results (shown only when searching) -->
+        <div id="search-results-section" style="display:none">
+          <div class="search-results-wrap">
+            <div class="search-result-title" id="search-result-title"></div>
+            <div id="search-results-list"></div>
+          </div>
+        </div>
+
+        <!-- Normal view (hidden while searching) -->
+        <div id="normal-regs-section">
+          <!-- Event filter chips -->
+          <div class="regs-filter" id="regs-filter"></div>
+          <!-- Grouped registration list -->
+          <div id="regs-groups"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div class="page" id="page-profile">
+      <div class="profile-wrap">
+        <div class="avatar-section">
+          <div class="avatar" id="profile-avatar">O</div>
+          <div class="profile-name" id="profile-name">Loading...</div>
+          <div class="profile-role" style="color:var(--accent)">✏️ Event Organizer</div>
+        </div>
+        <div class="profile-card">
+          <div class="profile-card-title">Personal Info</div>
+          <div class="field-row"><div class="field-icon">👤</div><div class="field-info"><div class="field-label">Username</div><input class="field-input" id="p-username" placeholder="Enter username"></div></div>
+          <div class="field-row"><div class="field-icon">📧</div><div class="field-info"><div class="field-label">Email</div><div class="field-value" id="p-email">—</div></div></div>
+          <div class="field-row"><div class="field-icon">📞</div><div class="field-info"><div class="field-label">Contact</div><input class="field-input" id="p-contact" placeholder="Enter contact"></div></div>
+          <div class="field-row"><div class="field-icon">🎓</div><div class="field-info"><div class="field-label">Roll No</div><input class="field-input" id="p-rollno" placeholder="Enter roll no"></div></div>
+        </div>
+        <button class="save-btn" onclick="saveProfile()">Save Profile</button>
+        <button class="logout-btn" onclick="logout()">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav — Create removed -->
+  <div class="bottom-nav">
+    <button class="nav-item active" id="nav-home"    onclick="navTo('home')">   <div class="nav-icon">📋</div><div class="nav-label">My Events</div></button>
+    <button class="nav-item"        id="nav-regs"    onclick="navTo('regs')">   <div class="nav-icon">🎟️</div><div class="nav-label">Registrations</div><div class="nav-badge" id="regs-nav-badge"></div></button>
+    <button class="nav-item"        id="nav-profile" onclick="navTo('profile')"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></button>
+  </div>
+</div>
+
+<!-- Participants Modal (from My Events click) -->
+<div class="modal-overlay" id="modal-parts" onclick="closePartsModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closePartsModal()">✕</button>
+    <div class="part-title" id="parts-event-title"></div>
+    <div class="part-sub"   id="parts-event-sub"></div>
+    <div id="parts-list"></div>
+  </div>
+</div>
+
+<script src="organizer.js"></script>
+</body>
+</html>

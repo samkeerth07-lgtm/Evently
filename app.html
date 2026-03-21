@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evently</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="app.css">
+<style>
+  /* Event Detail Modal */
+  .modal-gradient{height:155px;border-radius:15px;margin-bottom:14px;display:flex;align-items:flex-end;padding:14px}
+  .modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:12px;color:var(--text)}
+  .modal-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:14px}
+  .modal-meta{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+  .modal-meta-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text)}
+  .register-btn{width:100%;padding:13px;background:linear-gradient(135deg,#2563EB,#3b82f6);border:none;border-radius:13px;color:#fff;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.3)}
+  .register-btn.registered{background:linear-gradient(135deg,#059669,#10B981)}
+  /* Registration Form Modal */
+  .reg-form-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text)}
+  .reg-form-sub{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .reg-fields{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+  .reg-submit{width:100%;padding:13px;background:linear-gradient(135deg,#2563EB,#3b82f6);border:none;border-radius:13px;color:#fff;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 6px 18px rgba(37,99,235,.3);display:flex;align-items:center;justify-content:center;gap:8px}
+  .reg-submit:disabled{opacity:.55;cursor:not-allowed}
+  .success-reg{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:12px 0}
+  .success-reg .big-emoji{font-size:56px;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  .success-reg .reg-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--text)}
+  .success-reg .reg-sub{font-size:13px;color:var(--muted);line-height:1.6}
+  .done-btn{width:100%;padding:13px;background:linear-gradient(135deg,#059669,#10B981);border:none;border-radius:13px;color:#fff;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="loading-screen" id="loading"><div class="loading-logo">Event<span>ly</span></div><div class="spinner"></div></div>
+
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="app-name">Event<span>ly</span></div>
+    <button class="avatar-btn" id="avatar-btn" onclick="navTo('profile')">U</button>
+  </div>
+  <div class="main">
+    <!-- HOME PAGE -->
+    <div class="page active" id="page-home">
+      <div class="carousel-wrap">
+        <div class="carousel">
+          <div class="slides" id="slides"></div>
+          <button class="car-arrow left" onclick="carSlide(-1)">‹</button>
+          <button class="car-arrow right" onclick="carSlide(1)">›</button>
+          <div class="dots" id="dots"></div>
+        </div>
+      </div>
+      <!-- Registered Events Section (shown only when user has registrations) -->
+      <div id="regs-section" style="display:none">
+        <div class="section-head">
+          <div class="section-title" style="color:var(--green)">✅ My Registrations</div>
+        </div>
+        <div class="events-list" id="regs-list"></div>
+        <div style="height:8px"></div>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">Available Events</div>
+        <button class="see-all" onclick="filterEvents('All',null)">See all →</button>
+      </div>
+      <div class="filters">
+        <button class="chip active" onclick="filterEvents('All',this)">All</button>
+        <button class="chip" onclick="filterEvents('Music',this)">🎵 Music</button>
+        <button class="chip" onclick="filterEvents('Art',this)">🎨 Art</button>
+        <button class="chip" onclick="filterEvents('Tech',this)">💻 Tech</button>
+        <button class="chip" onclick="filterEvents('Food',this)">🍜 Food</button>
+        <button class="chip" onclick="filterEvents('Wellness',this)">🌿 Wellness</button>
+      </div>
+      <div class="events-list" id="events-list"></div>
+      <div style="height:16px"></div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div class="page" id="page-profile">
+      <div class="profile-wrap">
+        <div class="avatar-section"><div class="avatar" id="profile-avatar">U</div><div class="profile-name" id="profile-name">Loading...</div><div class="profile-role">Evently Member</div></div>
+        <div class="profile-card">
+          <div class="profile-card-title">Personal Info</div>
+          <div class="field-row"><div class="field-icon">👤</div><div class="field-info"><div class="field-label">Username</div><input class="field-input" id="p-username" placeholder="Enter username"></div></div>
+          <div class="field-row"><div class="field-icon">📧</div><div class="field-info"><div class="field-label">Email</div><div class="field-value" id="p-email">—</div></div></div>
+          <div class="field-row"><div class="field-icon">📞</div><div class="field-info"><div class="field-label">Phone</div><div class="field-value" id="p-phone">—</div></div></div>
+          <div class="field-row"><div class="field-icon">📋</div><div class="field-info"><div class="field-label">Contact</div><input class="field-input" id="p-contact" placeholder="Enter contact"></div></div>
+          <div class="field-row"><div class="field-icon">🎓</div><div class="field-info"><div class="field-label">Roll No</div><input class="field-input" id="p-rollno" placeholder="Enter roll no"></div></div>
+        </div>
+        <button class="save-btn" onclick="saveProfile()">Save Profile</button>
+        <button class="logout-btn" onclick="logout()">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav — Home + Profile only -->
+  <div class="bottom-nav">
+    <button class="nav-item active" id="nav-home" onclick="navTo('home')"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></button>
+    <button class="nav-item" id="nav-profile" onclick="navTo('profile')"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></button>
+  </div>
+</div>
+
+<!-- Event Detail Modal -->
+<div class="modal-overlay" id="modal-event" onclick="closeEventModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeEventModal()">✕</button>
+    <div class="modal-gradient" id="modal-gradient"><div class="slide-info"><div class="slide-tag" id="modal-tag"></div><div class="slide-title" id="modal-title-sm"></div></div></div>
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-desc" id="modal-desc"></div>
+    <div class="modal-meta">
+      <div class="modal-meta-row">📅 <span id="modal-date"></span></div>
+      <div class="modal-meta-row">📍 <span id="modal-location"></span></div>
+      <div class="modal-meta-row">💰 <span id="modal-price"></span></div>
+      <div class="modal-meta-row">🌟 <span id="modal-organizer"></span></div>
+    </div>
+    <button class="register-btn" id="register-btn">Register Now</button>
+  </div>
+</div>
+
+<!-- Registration Form Modal -->
+<div class="modal-overlay" id="modal-reg" onclick="closeRegModal(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeRegModal()">✕</button>
+    <!-- Form View -->
+    <div id="reg-form-view">
+      <div class="reg-form-title">📋 Register for Event</div>
+      <div class="reg-form-sub" id="reg-event-name"></div>
+      <div class="reg-fields">
+        <div class="form-group"><div class="form-label">Full Name *</div><input class="form-input" id="reg-name" type="text" placeholder="Enter your full name"></div>
+        <div class="form-group"><div class="form-label">Email *</div><input class="form-input" id="reg-email" type="email" placeholder="your@email.com"></div>
+        <div class="form-group"><div class="form-label">Phone Number *</div><input class="form-input" id="reg-phone" type="tel" placeholder="9876543210"></div>
+        <div class="form-group"><div class="form-label">Roll Number</div><input class="form-input" id="reg-roll" type="text" placeholder="e.g. 24BQ1A5401"></div>
+      </div>
+      <button class="reg-submit" id="reg-submit-btn" onclick="submitRegistration()"><span id="reg-submit-text">Confirm Registration</span></button>
+    </div>
+    <!-- Success View -->
+    <div id="reg-success-view" style="display:none">
+      <div class="success-reg">
+        <div class="big-emoji">🎉</div>
+        <div class="reg-title">Registered!</div>
+        <div class="reg-sub" id="reg-success-msg">You're in! See you at the event.</div>
+        <button class="done-btn" onclick="closeRegModal()">Done ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

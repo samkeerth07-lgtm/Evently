@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evently – Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#F8FAFC;--sf:#FFFFFF;--sf2:#EFF6FF;--ac:#2563EB;--ac2:#93C5FD;--tx:#1E293B;--mu:#64748B;--bd:rgba(0,0,0,.08);--gn:#10B981}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--tx);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 20px}
+  body::before{content:'';position:fixed;top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,.08),transparent 70%);pointer-events:none}
+  body::after{content:'';position:fixed;bottom:-80px;left:-80px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(16,185,129,.06),transparent 70%);pointer-events:none}
+  .container{width:100%;max-width:400px;display:flex;flex-direction:column;gap:22px;position:relative;z-index:1}
+  .logo{text-align:center}
+  .logo-icon{width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,var(--ac),var(--ac2));display:inline-flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:12px;box-shadow:0 8px 30px rgba(37,99,235,.3)}
+  .logo-title{font-family:'Playfair Display',serif;font-size:34px;font-weight:900;letter-spacing:-1px;color:var(--tx)}
+  .logo-title span{color:var(--ac)}
+  .logo-sub{font-size:14px;color:var(--mu);margin-top:4px}
+  .tabs{display:flex;background:var(--sf);border-radius:13px;padding:4px;border:1px solid var(--bd);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+  .tab{flex:1;text-align:center;padding:10px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .25s;color:var(--mu)}
+  .tab.active{background:var(--ac);color:#fff;box-shadow:0 4px 14px rgba(37,99,235,.3)}
+  .card{background:var(--sf);border-radius:22px;border:1px solid var(--bd);padding:24px 20px;display:flex;flex-direction:column;gap:16px;box-shadow:0 4px 20px rgba(37,99,235,.07)}
+  .screen{display:none;flex-direction:column;gap:16px}
+  .screen.active{display:flex;animation:fu .3s ease}
+  @keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .igroup{display:flex;flex-direction:column;gap:6px}
+  .ilabel{font-size:11px;font-weight:600;color:var(--mu);text-transform:uppercase;letter-spacing:.6px}
+  .iwrap{position:relative}
+  .ifield{width:100%;padding:13px 15px;background:var(--sf2);border:1.5px solid var(--bd);border-radius:12px;color:var(--tx);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s,background .2s}
+  .ifield:focus{border-color:var(--ac);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+  .ifield::placeholder{color:var(--mu)}
+  .ifield.pad{padding-left:42px}
+  .iicon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+  .phone-row{display:flex;gap:8px}
+  .cc{width:80px;flex-shrink:0;padding:13px 8px;background:var(--sf2);border:1.5px solid var(--bd);border-radius:12px;color:var(--tx);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;appearance:none;text-align:center;cursor:pointer}
+  .cc:focus{border-color:var(--ac)}
+  .btn-primary{width:100%;padding:14px;border:none;border-radius:13px;background:linear-gradient(135deg,var(--ac),#3b82f6);color:#fff;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(37,99,235,.3);display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s}
+  .btn-primary:disabled{opacity:.55;cursor:not-allowed}
+  .btn-secondary{width:100%;padding:13px;border:1.5px solid var(--bd);border-radius:13px;background:var(--sf);color:var(--tx);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+  .btn-secondary:hover{border-color:var(--ac2);background:var(--sf2)}
+  .otp-row{display:flex;gap:8px;justify-content:center}
+  .obox{width:46px;height:54px;border-radius:12px;background:var(--sf2);border:1.5px solid var(--bd);color:var(--tx);font-size:22px;font-weight:700;text-align:center;outline:none;font-family:'DM Sans',sans-serif;transition:border-color .2s}
+  .obox:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+  .back-btn{display:flex;align-items:center;gap:6px;color:var(--mu);font-size:13px;cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:0;font-weight:500}
+  .back-btn:hover{color:var(--ac)}
+  .info-center{text-align:center}
+  .info-center .title{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--tx)}
+  .info-center .sub{font-size:12px;color:var(--mu)}
+  .info-center .phone-hl{color:var(--ac);font-weight:600}
+  .switch-text{text-align:center;font-size:13px;color:var(--mu)}
+  .switch-link{color:var(--ac);font-weight:600;cursor:pointer}
+  .resend-text{text-align:center;font-size:13px;color:var(--mu)}
+  .resend-link{color:var(--ac);font-weight:600;cursor:pointer}
+  .success-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:8px 0}
+  .success-emoji{font-size:56px;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  .success-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--tx)}
+  .success-sub{font-size:14px;color:var(--mu);line-height:1.6}
+  .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--sf);border:1px solid var(--bd);border-radius:14px;padding:11px 20px;font-size:14px;font-weight:500;box-shadow:0 10px 40px rgba(0,0,0,.1);transition:transform .4s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;color:var(--tx)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+  .toast.ok{border-color:var(--gn);color:var(--gn)}
+  .toast.err{border-color:#ef4444;color:#ef4444}
+  .spinner{width:16px;height:16px;border:2px solid rgba(37,99,235,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .divider{display:flex;align-items:center;gap:11px;font-size:12px;color:var(--mu)}
+  .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--bd)}
+  /* Recommended badge */
+  .rec-badge{font-size:10px;background:var(--ac);color:#fff;padding:2px 7px;border-radius:8px;margin-left:4px}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="container">
+  <div class="logo">
+    <div class="logo-icon">🎭</div>
+    <div class="logo-title">Event<span>ly</span></div>
+    <div class="logo-sub">Discover events around you</div>
+  </div>
+  <div class="tabs">
+    <div class="tab active" id="tab-si" onclick="switchTab('si')">Sign In</div>
+    <div class="tab" id="tab-su" onclick="switchTab('su')">Sign Up</div>
+  </div>
+  <div class="card">
+    <!-- SUCCESS -->
+    <div class="screen" id="scr-success">
+      <div class="success-wrap">
+        <div class="success-emoji">🎉</div>
+        <div class="success-title">You're in!</div>
+        <div class="success-sub" id="success-msg">Welcome to Evently!</div>
+      </div>
+    </div>
+
+    <!-- SIGN IN HOME -->
+    <div class="screen active" id="scr-si-home">
+      <button class="btn-secondary" onclick="show('scr-si-phone')">📱 &nbsp;Sign in with Mobile</button>
+      <div class="divider">or</div>
+      <button class="btn-secondary" onclick="show('scr-si-email')">📧 &nbsp;Sign in with Email</button>
+      <div class="switch-text">No account? <span class="switch-link" onclick="switchTab('su')">Sign Up</span></div>
+    </div>
+
+    <!-- SIGN IN PHONE -->
+    <div class="screen" id="scr-si-phone">
+      <button class="back-btn" onclick="show('scr-si-home')">← Back</button>
+      <div class="info-center"><div class="title">📱 Mobile Sign In</div><div class="sub">We'll send a 6-digit OTP</div></div>
+      <div class="igroup"><div class="ilabel">Mobile Number</div>
+        <div class="phone-row">
+          <select class="cc" id="si-cc"><option value="+91">+91 🇮🇳</option><option value="+1">+1 🇺🇸</option><option value="+44">+44 🇬🇧</option></select>
+          <input class="ifield" id="si-phone" type="tel" placeholder="9876543210" style="flex:1">
+        </div>
+      </div>
+      <button class="btn-primary" id="si-send-btn" onclick="sendOTP('si')"><span id="si-send-text">Send OTP</span></button>
+      <div class="switch-text">No account? <span class="switch-link" onclick="switchTab('su')">Sign Up</span></div>
+    </div>
+
+    <!-- SIGN IN OTP -->
+    <div class="screen" id="scr-si-otp">
+      <button class="back-btn" onclick="show('scr-si-phone')">← Back</button>
+      <div class="info-center"><div class="title">Enter OTP</div><div class="sub">Sent to <span class="phone-hl" id="si-phone-shown"></span></div></div>
+      <div class="otp-row" id="si-otp-row">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,0,'si')" onkeydown="otpBack(event,this,0,'si')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,1,'si')" onkeydown="otpBack(event,this,1,'si')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,2,'si')" onkeydown="otpBack(event,this,2,'si')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,3,'si')" onkeydown="otpBack(event,this,3,'si')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,4,'si')" onkeydown="otpBack(event,this,4,'si')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,5,'si')" onkeydown="otpBack(event,this,5,'si')">
+      </div>
+      <button class="btn-primary" id="si-ver-btn" onclick="verifyOTP('si')"><span id="si-ver-text">Verify & Sign In</span></button>
+      <div class="resend-text">Didn't get it? <span class="resend-link" id="si-resend" onclick="resendOTP('si')">Resend</span> <span id="si-timer"></span></div>
+    </div>
+
+    <!-- SIGN IN EMAIL -->
+    <div class="screen" id="scr-si-email">
+      <button class="back-btn" onclick="show('scr-si-home')">← Back</button>
+      <div class="igroup"><div class="ilabel">Email</div><div class="iwrap"><span class="iicon">📧</span><input class="ifield pad" id="si-email" type="email" placeholder="you@example.com"></div></div>
+      <div class="igroup"><div class="ilabel">Password</div><div class="iwrap"><span class="iicon">🔒</span><input class="ifield pad" id="si-password" type="password" placeholder="Password"></div></div>
+      <button class="btn-primary" id="si-email-btn" onclick="signInEmail()"><span id="si-email-text">Sign In</span></button>
+      <div class="switch-text">No account? <span class="switch-link" onclick="switchTab('su')">Sign Up</span></div>
+    </div>
+
+    <!-- SIGN UP HOME -->
+    <div class="screen" id="scr-su-home">
+      <button class="btn-secondary" onclick="show('scr-su-phone')" style="border-color:rgba(37,99,235,.35);color:var(--ac)">
+        📱 &nbsp;Mobile <span class="rec-badge">Recommended</span>
+      </button>
+      <div class="divider">or</div>
+      <button class="btn-secondary" onclick="show('scr-su-email')">📧 &nbsp;Sign up with Email</button>
+      <div class="switch-text">Have account? <span class="switch-link" onclick="switchTab('si')">Sign In</span></div>
+    </div>
+
+    <!-- SIGN UP PHONE -->
+    <div class="screen" id="scr-su-phone">
+      <button class="back-btn" onclick="show('scr-su-home')">← Back</button>
+      <div class="info-center"><div class="title">📱 Mobile Sign Up</div><div class="sub">Enter details to get started</div></div>
+      <div class="igroup"><div class="ilabel">Username</div><div class="iwrap"><span class="iicon">👤</span><input class="ifield pad" id="su-username" type="text" placeholder="yourname"></div></div>
+      <div class="igroup"><div class="ilabel">Mobile Number</div>
+        <div class="phone-row">
+          <select class="cc" id="su-cc"><option value="+91">+91 🇮🇳</option><option value="+1">+1 🇺🇸</option><option value="+44">+44 🇬🇧</option></select>
+          <input class="ifield" id="su-phone" type="tel" placeholder="9876543210" style="flex:1">
+        </div>
+      </div>
+      <button class="btn-primary" id="su-send-btn" onclick="sendOTP('su')"><span id="su-send-text">Send OTP</span></button>
+      <div class="switch-text">Have account? <span class="switch-link" onclick="switchTab('si')">Sign In</span></div>
+    </div>
+
+    <!-- SIGN UP OTP -->
+    <div class="screen" id="scr-su-otp">
+      <button class="back-btn" onclick="show('scr-su-phone')">← Back</button>
+      <div class="info-center"><div class="title">Enter OTP</div><div class="sub">Sent to <span class="phone-hl" id="su-phone-shown"></span></div></div>
+      <div class="otp-row" id="su-otp-row">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,0,'su')" onkeydown="otpBack(event,this,0,'su')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,1,'su')" onkeydown="otpBack(event,this,1,'su')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,2,'su')" onkeydown="otpBack(event,this,2,'su')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,3,'su')" onkeydown="otpBack(event,this,3,'su')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,4,'su')" onkeydown="otpBack(event,this,4,'su')">
+        <input class="obox" maxlength="1" inputmode="numeric" oninput="otpNav(this,5,'su')" onkeydown="otpBack(event,this,5,'su')">
+      </div>
+      <button class="btn-primary" id="su-ver-btn" onclick="verifyOTP('su')"><span id="su-ver-text">Verify & Create Account</span></button>
+      <div class="resend-text">Didn't get it? <span class="resend-link" id="su-resend" onclick="resendOTP('su')">Resend</span> <span id="su-timer"></span></div>
+    </div>
+
+    <!-- SIGN UP EMAIL -->
+    <div class="screen" id="scr-su-email">
+      <button class="back-btn" onclick="show('scr-su-home')">← Back</button>
+      <div class="igroup"><div class="ilabel">Username</div><div class="iwrap"><span class="iicon">👤</span><input class="ifield pad" id="su-em-user" type="text" placeholder="yourname"></div></div>
+      <div class="igroup"><div class="ilabel">Email</div><div class="iwrap"><span class="iicon">📧</span><input class="ifield pad" id="su-email" type="email" placeholder="you@vvit.net"></div></div>
+      <div class="igroup"><div class="ilabel">Password</div><div class="iwrap"><span class="iicon">🔒</span><input class="ifield pad" id="su-password" type="password" placeholder="Min 6 characters"></div></div>
+      <button class="btn-primary" id="su-email-btn" onclick="signUpEmail()"><span id="su-email-text">Create Account</span></button>
+      <div class="switch-text">Have account? <span class="switch-link" onclick="switchTab('si')">Sign In</span></div>
+    </div>
+  </div>
+</div>
+<script src="auth.js"></script>
+</body>
+</html>
